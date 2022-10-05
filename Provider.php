@@ -26,13 +26,13 @@ class Provider extends AbstractProvider implements ProviderInterface
 
     protected function buildAuthUrlFromBase($url, $state)
     {
-        return $url.'?'.http_build_query($this->getCodeFields($state), '', '&', $this->encodingType);
+        return $url . '?' . http_build_query($this->getCodeFields($state), '', '&', $this->encodingType);
     }
 
     /**
      * Get the GET parameters for the code request.
      *
-     * @param  string|null  $state
+     * @param string|null $state
      * @return array
      */
     protected function getCodeFields($state = null)
@@ -77,7 +77,6 @@ class Provider extends AbstractProvider implements ProviderInterface
         if ($this->hasInvalidState()) {
             throw new InvalidStateException();
         }
-
         // see https://ads.tiktok.com/marketing_api/docs?id=1701890914536450
         $response = $this->getAccessTokenResponse($this->getCode());
         $token = Arr::get($response, 'data.access_token');
@@ -91,7 +90,7 @@ class Provider extends AbstractProvider implements ProviderInterface
         );
         $this->user->setToken($token);
         $this->user->setApprovedScopes($scopes);
-        $this->user->setRaw( ['advertiser_ids'   => $advertiserIds]);
+        $this->user->setRaw(['advertiser_ids' => $advertiserIds]);
 
         return $this->user;
     }
@@ -106,13 +105,14 @@ class Provider extends AbstractProvider implements ProviderInterface
      */
     protected function getUserByToken($token)
     {
-        $response = $this->getHttpClient()->get('https://ads.tiktok.com/open_api/v1.2/user/info/', [
+
+        $response = $this->getHttpClient()->get('https://ads.tiktok.com/open_api/v1.3/user/info/', [
             RequestOptions::HEADERS => [
                 'Access-Token' => $token,
             ],
         ]);
 
-        return json_decode((string) $response->getBody(), true);
+        return json_decode((string)$response->getBody(), true);
     }
 
     /**
@@ -121,7 +121,7 @@ class Provider extends AbstractProvider implements ProviderInterface
      */
     protected function getTokenUrl()
     {
-        return 'https://business-api.tiktok.com/open_api/v1.2/oauth2/access_token/';
+        return 'https://business-api.tiktok.com/open_api/v1.3/oauth2/access_token/';
     }
 
     /**
@@ -130,12 +130,9 @@ class Provider extends AbstractProvider implements ProviderInterface
     public function getAccessTokenResponse($code)
     {
         $response = $this->getHttpClient()->post($this->getTokenUrl(), [
-            'form_params' => $this->getTokenFields($code),
+            'json' => $this->getTokenFields($code),
         ]);
-
-
         $data = json_decode($response->getBody(), true);
-
         return Arr::add($data, 'expires_in', Arr::pull($data, 'expires'));
     }
 
@@ -145,9 +142,9 @@ class Provider extends AbstractProvider implements ProviderInterface
     protected function mapUserToObject(array $user)
     {
         return (new User())->setRaw($user)->map([
-            'id'       => Arr::get($user, 'data.id'),
-            'name'     => Arr::get($user, 'data.display_name'),
-            'email'     => Arr::get($user, 'data.email'),
+            'id' => Arr::get($user, 'data.id'),
+            'name' => Arr::get($user, 'data.display_name'),
+            'email' => Arr::get($user, 'data.email'),
         ]);
     }
 
@@ -158,9 +155,8 @@ class Provider extends AbstractProvider implements ProviderInterface
     protected function getTokenFields($authCode)
     {
         $fields = [
-            'grant_type' => 'authorization_code',
-            'app_id' => $this->clientId,
             'secret' => $this->clientSecret,
+            'app_id' => $this->clientId,
             'auth_code' => $authCode,
         ];
 
